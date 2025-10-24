@@ -288,11 +288,7 @@ export const data = {
           url: "/auth/login",
           circleColor: "bg-primary",
         },
-        {
-          title: "Sign Up",
-          url: "/auth/register",
-          circleColor: "bg-yellow-500",
-        },
+        // Sign up removed; handled via admin
         {
           title: "Forgot Password",
           url: "/auth/forgot-password",

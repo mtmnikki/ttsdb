@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createMiddlewareClient } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 
 const publicRoutes = [
   "/auth/login",
-  "/auth/register",
   "/auth/forgot-password",
   "/auth/create-password",
-  "/auth/callback",
 ];
 
 export async function middleware(req: NextRequest) {
@@ -26,16 +24,23 @@ export async function middleware(req: NextRequest) {
 
   const res = NextResponse.next();
 
-  const supabase = createMiddlewareClient({
-    req,
-    res,
-  }, {
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  });
-
-  // Ensure auth cookies are refreshed/available
-  await supabase.auth.getSession();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return req.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          res.cookies.set({ name, value, ...options });
+        },
+        remove(name: string, options: any) {
+          res.cookies.set({ name, value: "", ...options });
+        },
+      },
+    }
+  );
 
   const {
     data: { user },
