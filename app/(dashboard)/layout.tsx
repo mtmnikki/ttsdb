@@ -1,7 +1,5 @@
 import { cookies } from "next/headers";
 import { ClientRoot } from "@/app/client-root";
-import { auth } from "@/auth";
-import { SessionProvider } from "next-auth/react";
 
 export default async function DashboardLayout({
   children,
@@ -12,13 +10,7 @@ export default async function DashboardLayout({
     const cookieStore = await cookies();
     const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
-    const session = await auth();
-
-    return (
-      <SessionProvider session={session}>
-        <ClientRoot defaultOpen={defaultOpen}>{children}</ClientRoot>
-      </SessionProvider>
-    );
+    return <ClientRoot defaultOpen={defaultOpen}>{children}</ClientRoot>;
   } catch (error) {
     return (
       <div className="p-8 text-center">

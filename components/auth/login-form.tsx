@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -14,7 +14,8 @@ import { useLoading } from '@/contexts/LoadingContext'
 import { loginSchema } from '@/lib/zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react'
-import { signIn } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { createSupabaseBrowser } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useRef, useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
@@ -29,6 +30,7 @@ const LoginForm = () => {
   const { loading, setLoading } = useLoading()
   const [isSubmitting, setIsSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null)
+  const router = useRouter()
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -47,18 +49,17 @@ const LoginForm = () => {
         if (!formRef.current) return
 
         const formData = new FormData(formRef.current)
-        const res = await handleLoginAction(formData)
+        const supabase = createSupabaseBrowser()
+        const { error } = await supabase.auth.signInWithPassword({
+          email: values.email,
+          password: values.password,
+        })
 
-        if (res?.error) {
-          toast.error(res.error)
+        if (error) {
+          toast.error(error.message || 'Invalid email or password')
         } else {
-          await signIn('credentials', {
-            redirect: true,
-            email: values.email,
-            password: values.password,
-            callbackUrl: '/dashboard',
-          })
           toast.success('Login successful!')
+          router.push('/dashboard')
         }
       } catch (error) {
         toast.error('Something went wrong. Please try again.')

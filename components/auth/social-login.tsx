@@ -1,5 +1,4 @@
-// ============================================= Server side way start =======================================
-import { doSocialLogin } from "@/app/actions";
+// ============================================= Supabase OAuth (client) =======================================
 import { useLoading } from "@/contexts/LoadingContext";
 import GithubIcon from "@/public/assets/images/icons/github-icon.png";
 import GoogleIcon from "@/public/assets/images/icons/google-icon.png";
@@ -7,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import React, { useState } from "react";
 import { Button } from "../ui/button";
+import { createSupabaseBrowser } from "@/lib/supabase/client";
 
 const SocialLogin = () => {
   const { loading, setLoading } = useLoading();
@@ -15,36 +15,36 @@ const SocialLogin = () => {
     null | "google" | "github"
   >(null);
 
-  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    setLoading(true);
-
-    const form = e.currentTarget;
-    const clickedButton = (document.activeElement as HTMLButtonElement)?.value;
-    setLoadingButtonProvider(
-      clickedButton === "google" || clickedButton === "github"
-        ? clickedButton
-        : null
-    );
-
-    setTimeout(() => {
-      setLoading(false);
-      setLoadingButtonProvider(null);
-    }, 2000);
+  const startOAuth = async (provider: "google" | "github") => {
+    try {
+      setLoading(true);
+      setLoadingButtonProvider(provider);
+      const supabase = createSupabaseBrowser();
+      const redirectTo = `${window.location.origin}/dashboard`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo },
+      });
+      if (error) {
+        console.error(error);
+      }
+    } finally {
+      // Supabase will redirect; keep spinner for UX until navigation
+      setTimeout(() => {
+        setLoading(false);
+        setLoadingButtonProvider(null);
+      }, 2000);
+    }
   };
 
   return (
-    <form
-      className="mt-8 flex items-center gap-3"
-      action={doSocialLogin}
-      onSubmit={handleFormSubmit}
-    >
+    <div className="mt-8 flex items-center gap-3">
       {/* Google Button */}
       <Button
         className="font-semibold text-neutral-600 hover:text-neutral-600 dark:text-neutral-200 py-6 px-2 w-1/2 border border-neutral-600/50 rounded-xl text-sm flex items-center justify-center gap-3 line-height-1 hover:border-blue-400 hover:bg-primary/10 disabled:opacity-80"
         variant="outline"
-        type="submit"
-        name="action"
-        value="google"
+        type="button"
+        onClick={() => startOAuth("google")}
         disabled={loadingButtonProvider === "google" || loading}
       >
         {loadingButtonProvider === "google" ? (
@@ -64,9 +64,8 @@ const SocialLogin = () => {
       <Button
         className="font-semibold text-neutral-600 hover:text-neutral-600 dark:text-neutral-200 py-6 px-2 w-1/2 border border-neutral-600/50 rounded-xl text-sm flex items-center justify-center gap-3 line-height-1 hover:border-slate-400 hover:bg-slate-600/10 disabled:opacity-80"
         variant="outline"
-        type="submit"
-        name="action"
-        value="github"
+        type="button"
+        onClick={() => startOAuth("github")}
         disabled={loadingButtonProvider === "github" || loading}
       >
         {loadingButtonProvider === "github" ? (
@@ -81,9 +80,9 @@ const SocialLogin = () => {
           </>
         )}
       </Button>
-    </form>
+    </div>
   );
 };
 
 export default SocialLogin;
-// ============================================= Server side way end =======================================
+// ============================================= Supabase OAuth end =======================================
